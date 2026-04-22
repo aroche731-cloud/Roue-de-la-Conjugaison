@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roue de Conjugaison</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Crimson+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --ink: #1a1825;
+    --gold: #c17f00;
+    --gold2: #a06800;
+    --rose: #c0293f;
+    --teal: #0b7b74;
+    --violet: #6b21a8;
+    --blue: #1e40af;
+    --text: #1a1825;
+    --muted: #555060;
+    --border: #d0ccc4;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Crimson Pro', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 10% 10%, rgba(193,127,0,0.07) 0%, transparent 45%),
+      radial-gradient(ellipse at 90% 90%, rgba(11,123,116,0.06) 0%, transparent 45%);
+  }
+
+  body::before { content: none; }
+
+  header {
+    text-align: center;
+    padding: 28px 20px 16px;
+    border-bottom: 3px solid var(--gold);
+    background: #ffffff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  header h1 span { color: var(--gold); }
+  header p {
+    color: var(--muted); font-size: 1rem; margin-top: 5px; font-style: italic;
+  }
+
+  /* WHEELS AREA */
+  .wheels-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(12px, 2vw, 28px);
+    padding: 20px clamp(10px, 3vw, 40px);
+    flex-wrap: wrap;
+  }
+
+  .wheel-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wheel-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink);
+    background: var(--gold);
+    padding: 3px 14px;
+    border-radius: 20px;
+    color: #fff;
+  }
+
+  .wheel-container {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.12s;
+  }
+  .wheel-container:hover { transform: scale(1.04); }
+  .wheel-container:active { transform: scale(0.97); }
+
+  canvas.wheel {
+    display: block;
+    border-radius: 50%;
+    border: 4px solid var(--ink);
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.22));
+    transition: filter 0.3s, border-color 0.3s;
+  }
+  .wheel-container:hover canvas.wheel {
+    filter: drop-shadow(0 6px 24px rgba(0,0,0,0.35));
+    border-color: var(--gold);
+  }
+
+  /* Pointer */
+  .pointer {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 22px solid var(--rose);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    z-index: 10;
+  }
+
+  /* SPIN ALL BUTTON */
+  .spin-all-wrap {
+    text-align: center;
+    margin: 10px 0 24px;
+  }
+
+  #spin-all {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    padding: 18px 56px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 0 3px var(--gold);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  #spin-all::before {
+    content:'';
+    position:absolute; inset:0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+    opacity:0;
+    transition: opacity 0.2s;
+  }
+  #spin-all:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3), 0 0 0 3px var(--gold); }
+  #spin-all:hover::before { opacity:1; }
+  #spin-all:active { transform: translateY(0); }
+  #spin-all:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* RESULT CARD */
+  #result-card {
+    max-width: 700px;
+    margin: 0 auto 32px;
+    padding: 0 20px;
+  }
+
+  .result-inner {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 36px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    position: relative;
+    overflow: hidden;
+  }
+  .result-inner::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:4px;
+    background: linear-gradient(90deg, var(--violet), var(--gold), var(--teal));
+  }
+
+  .result-combo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .combo-tag {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .tag-mode  { background: rgba(107,33,168,0.12); color: #6b21a8; border: 1.5px solid rgba(107,33,168,0.3); }
+  .tag-temps { background: rgba(30,64,175,0.10); color: #1e40af; border: 1.5px solid rgba(30,64,175,0.25); }
+  .tag-pr    { background: rgba(11,123,116,0.10); color: #0b7b74; border: 1.5px solid rgba(11,123,116,0.25); }
+  .tag-verbe { background: rgba(193,127,0,0.12); color: var(--gold); border: 1.5px solid rgba(193,127,0,0.3); }
+
+  .result-question {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+    font-style: italic;
+  }
+  .result-question strong { color: var(--ink); font-style: normal; font-size: 1.15rem; }
+
+  .result-answer {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 900;
+    color: var(--teal);
+    letter-spacing: 0.02em;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+  }
+  .result-answer.hidden {
+    filter: blur(14px);
+    color: rgba(11,123,116,0.3);
+    cursor: pointer;
+  }
+  .result-answer.hidden::after {
+    content: ' (cliquez pour révéler)';
+    font-size: 0.9rem;
+    font-family: 'Crimson Pro', serif;
+    font-weight: 400;
+    color: var(--muted);
+    font-style: italic;
+    margin-left: 8px;
+    filter: none;
+  }
+
+  .reveal-hint {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 10px;
+    font-style: italic;
+    transition: opacity 0.3s;
+  }
+
+  /* Score bar */
+  .score-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    max-width: 400px;
+    margin: 0 auto 24px;
+    padding: 12px 24px;
+    background: #fff;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .score-item { text-align: center; }
+  .score-val { font-size: 1.8rem; font-weight: 700; font-family: 'Playfair Display', serif; display: block; }
+  .score-lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  .score-val.ok  { color: var(--teal); }
+  .score-val.err { color: var(--rose); }
+  .score-val.tot { color: var(--gold); }
+
+  .eval-btns {
+    display: flex; gap: 12px; justify-content: center; margin-top: 18px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  .eval-btns.visible { opacity: 1; pointer-events: all; }
+
+  .eval-btn {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem; font-weight: 600;
+    padding: 10px 28px;
+    border-radius: 8px;
+    border: none; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .eval-btn.ok  { background: rgba(11,123,116,0.12); color: var(--teal); border: 2px solid rgba(11,123,116,0.4); }
+  .eval-btn.ok:hover  { background: rgba(11,123,116,0.22); }
+  .eval-btn.err { background: rgba(192,41,63,0.10); color: var(--rose); border: 2px solid rgba(192,41,63,0.35); }
+  .eval-btn.err:hover { background: rgba(192,41,63,0.20); }
+
+  /* spin animation */
+  @keyframes pulse-glow {
+    0%,100% { box-shadow: 0 0 20px rgba(232,197,71,0.3); }
+    50%      { box-shadow: 0 0 50px rgba(232,197,71,0.7); }
+  }
+  .spinning canvas { animation: pulse-glow 0.5s infinite; }
+
+  /* initial state */
+  #result-card { display: none; }
+  #result-card.visible { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Roue de <span>Conjugaison</span></h1>
+  <p>Cliquez sur une roue pour la faire tourner, ou lancez toutes les roues</p>
+</header>
+
+<div class="wheels-area" id="wheels-area">
+  <div class="wheel-wrapper">
+    <div class="wheel-label">Mode</div>
+    <div class="wheel-container" id="wc-mode" onclick="spinWheel('mode')">
+      <div class="pointer"></div>
+      <canvas class="wheel" id="wheel-mode" width="170" height="170"></canvas>
+    </div>
+  </div>
+  <div class="wheel-wrapper">
+    <div class="wheel-label">Temps</div>
+    <div class="wheel-container" id="wc-temps" onclick="spinWheel('temps')">
+      <div class="pointer"></div>
+      <canvas class="wheel" id="wheel-temps" width="190" height="190"></canvas>
+    </div>
+  </div>
+  <div class="wheel-wrapper">
+    <div class="wheel-label">Pronom</div>
+    <div class="wheel-container" id="wc-pr" onclick="spinWheel('pr')">
+      <div class="pointer"></div>
+      <canvas class="wheel" id="wheel-pr" width="170" height="170"></canvas>
+    </div>
+  </div>
+  <div class="wheel-wrapper">
+    <div class="wheel-label">Verbe</div>
+    <div class="wheel-container" id="wc-verbe" onclick="spinWheel('verbe')">
+      <div class="pointer"></div>
+      <canvas class="wheel" id="wheel-verbe" width="210" height="210"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="spin-all-wrap">
+  <button id="spin-all" onclick="spinAll()">✦ Tourner toutes les roues</button>
+</div>
+
+<div class="score-bar">
+  <div class="score-item"><span class="score-val ok" id="sc-ok">0</span><span class="score-lbl">✓ Correct</span></div>
+  <div class="score-item"><span class="score-val tot" id="sc-tot">0</span><span class="score-lbl">Total</span></div>
+  <div class="score-item"><span class="score-val err" id="sc-err">0</span><span class="score-lbl">✗ Erreur</span></div>
+</div>
+
+<div id="result-card">
+  <div class="result-inner">
+    <div class="result-combo" id="combo-tags"></div>
+    <div class="result-question" id="result-question"></div>
+    <div class="result-answer hidden" id="result-answer" onclick="revealAnswer()"></div>
+    <div class="reveal-hint" id="reveal-hint">Cliquez sur la forme pour révéler la réponse</div>
+    <div class="eval-btns" id="eval-btns">
+      <button class="eval-btn ok" onclick="score(true)">✓ Correct</button>
+      <button class="eval-btn err" onclick="score(false)">✗ Erreur</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+
+const MODES = ["Indicatif","Subjonctif","Conditionnel","Impératif","Infinitif","Participe"];
+
+const TEMPS_BY_MODE = {
+  "Indicatif":    ["Présent","Imparfait","Passé composé","Passé simple","Plus-que-parfait","Passé antérieur","Futur simple","Futur antérieur"],
+  "Subjonctif":   ["Présent","Passé","Imparfait","Plus-que-parfait"],
+  "Conditionnel": ["Présent","Passé"],
+  "Impératif":    ["Présent","Passé"],
+  "Infinitif":    ["Présent","Passé"],
+  "Participe":    ["Présent","Passé simple","Passé composé"],
+};
+
+const PRONOMS_BY_MODE = {
+  "Indicatif":    ["je","tu","il/elle","nous","vous","ils/elles"],
+  "Subjonctif":   ["que je","que tu","qu'il/elle","que nous","que vous","qu'ils/elles"],
+  "Conditionnel": ["je","tu","il/elle","nous","vous","ils/elles"],
+  "Impératif":    ["tu","nous","vous"],
+  "Infinitif":    ["—"],
+  "Participe":    ["—"],
+};
+
+const VERBES = [
+  "sourire","aimer","espérer","réussir","briller","célébrer",
+  "grandir","partager","avancer","rêver","chanter","danser",
+  "être","avoir","aller","faire","venir","pouvoir","vouloir","savoir",
+];
+
+// ── CONJUGATION TABLE (key: mode|temps|verbe|pr) ─────────────────────
+function conjugue(mode, temps, verbe, pr) {
+  // Normalize pr for lookup
+  const p = pr.replace(/^que? ?/,'').replace("'","'");
+
+  // ── SOURIRE ──
+  if(verbe==="sourire") {
+    const s = {
+      "Indicatif|Présent":           {je:"souris",tu:"souris","il/elle":"sourit",nous:"sourions",vous:"souriez","ils/elles":"sourient"},
+      "Indicatif|Imparfait":         {je:"souriais",tu:"souriais","il/elle":"souriait",nous:"souriions",vous:"souriiez","ils/elles":"souriaient"},
+      "Indicatif|Passé composé":     {je:"ai souri",tu:"as souri","il/elle":"a souri",nous:"avons souri",vous:"avez souri","ils/elles":"ont souri"},
+      "Indicatif|Passé simple":      {je:"souris",tu:"souris","il/elle":"sourit",nous:"sourîmes",vous:"sourîtes","ils/elles":"sourirent"},
+      "Indicatif|Plus-que-parfait":  {je:"avais souri",tu:"avais souri","il/elle":"avait souri",nous:"avions souri",vous:"aviez souri","ils/elles":"avaient souri"},
+      "Indicatif|Passé antérieur":   {je:"eus souri",tu:"eus souri","il/elle":"eut souri",nous:"eûmes souri",vous:"eûtes souri","ils/elles":"eurent souri"},
+      "Indicatif|Futur simple":      {je:"sourirai",tu:"souriras","il/elle":"sourira",nous:"sourirons",vous:"sourirez","ils/elles":"souriront"},
+      "Indicatif|Futur antérieur":   {je:"aurai souri",tu:"auras souri","il/elle":"aura souri",nous:"aurons souri",vous:"aurez souri","ils/elles":"auront souri"},
+      "Subjonctif|Présent":          {je:"sourie",tu:"souries","il/elle":"sourie",nous:"sourions",vous:"souriez","ils/elles":"sourient"},
+      "Subjonctif|Passé":            {je:"aie souri",tu:"aies souri","il/elle":"ait souri",nous:"ayons souri",vous:"ayez souri","ils/elles":"aient souri"},
+      "Subjonctif|Imparfait":        {je:"sourisse",tu:"sourisses","il/elle":"sourît",nous:"sourissions",vous:"sourissiez","ils/elles":"sourissent"},
+      "Subjonctif|Plus-que-parfait": {je:"eusse souri",tu:"eusses souri","il/elle":"eût souri",nous:"eussions souri",vous:"eussiez souri","ils/elles":"eussent souri"},
+      "Conditionnel|Présent":        {je:"sourirais",tu:"sourirais","il/elle":"sourirait",nous:"souririons",vous:"souririez","ils/elles":"souriraient"},
+      "Conditionnel|Passé":          {je:"aurais souri",tu:"aurais souri","il/elle":"aurait souri",nous:"aurions souri",vous:"auriez souri","ils/elles":"auraient souri"},
+      "Impératif|Présent":           {tu:"souris !",nous:"sourions !",vous:"souriez !"},
+      "Impératif|Passé":             {tu:"aie souri !",nous:"ayons souri !",vous:"ayez souri !"},
+      "Infinitif|Présent":           {"—":"sourire"},
+      "Infinitif|Passé":             {"—":"avoir souri"},
+      "Participe|Présent":           {"—":"souriant"},
+      "Participe|Passé simple":      {"—":"souri"},
+      "Participe|Passé composé":     {"—":"ayant souri"},
+    };
+    const key = `${mode}|${temps}`;
+    if(s[key] && s[key][p]) return s[key][p];
+  }
+
+  // ── ÊTRE ──
+  if(verbe==="être") {
+    const s = {
+      "Indicatif|Présent":           {je:"suis",tu:"es","il/elle":"est",nous:"sommes",vous:"êtes","ils/elles":"sont"},
+      "Indicatif|Imparfait":         {je:"étais",tu:"étais","il/elle":"était",nous:"étions",vous:"étiez","ils/elles":"étaient"},
+      "Indicatif|Passé composé":     {je:"ai été",tu:"as été","il/elle":"a été",nous:"avons été",vous:"avez été","ils/elles":"ont été"},
+      "Indicatif|Passé simple":      {je:"fus",tu:"fus","il/elle":"fut",nous:"fûmes",vous:"fûtes","ils/elles":"furent"},
+      "Indicatif|Plus-que-parfait":  {je:"avais été",tu:"avais été","il/elle":"avait été",nous:"avions été",vous:"aviez été","ils/elles":"avaient été"},
+      "Indicatif|Passé antérieur":   {je:"eus été",tu:"eus été","il/elle":"eut été",nous:"eûmes été",vous:"eûtes été","ils/elles":"eurent été"},
+      "Indicatif|Futur simple":      {je:"serai",tu:"seras","il/elle":"sera",nous:"serons",vous:"serez","ils/elles":"seront"},
+      "Indicatif|Futur antérieur":   {je:"aurai été",tu:"auras été","il/elle":"aura été",nous:"aurons été",vous:"aurez été","ils/elles":"auront été"},
+      "Subjonctif|Présent":          {je:"sois",tu:"sois","il/elle":"soit",nous:"soyons",vous:"soyez","ils/elles":"soient"},
+      "Subjonctif|Passé":            {je:"aie été",tu:"aies été","il/elle":"ait été",nous:"ayons été",vous:"ayez été","ils/elles":"aient été"},
+      "Subjonctif|Imparfait":        {je:"fusse",tu:"fusses","il/elle":"fût",nous:"fussions",vous:"fussiez","ils/elles":"fussent"},
+      "Subjonctif|Plus-que-parfait": {je:"eusse été",tu:"eusses été","il/elle":"eût été",nous:"eussions été",vous:"eussiez été","ils/elles":"eussent été"},
+      "Conditionnel|Présent":        {je:"serais",tu:"serais","il/elle":"serait",nous:"serions",vous:"seriez","ils/elles":"seraient"},
+      "Conditionnel|Passé":          {je:"aurais été",tu:"aurais été","il/elle":"aurait été",nous:"aurions été",vous:"auriez été","ils/elles":"auraient été"},
+      "Impératif|Présent":           {tu:"sois !",nous:"soyons !",vous:"soyez !"},
+      "Impératif|Passé":             {tu:"aie été !",nous:"ayons été !",vous:"ayez été !"},
+      "Infinitif|Présent":           {"—":"être"},
+      "Infinitif|Passé":             {"—":"avoir été"},
+      "Participe|Présent":           {"—":"étant"},
+      "Participe|Passé simple":      {"—":"été"},
+      "Participe|Passé composé":     {"—":"ayant été"},
+    };
+    const key = `${mode}|${temps}`;
+    if(s[key] && s[key][p]) return s[key][p];
+  }
+
+  // ── AVOIR ──
+  if(verbe==="avoir") {
+    const s = {
+      "Indicatif|Présent":           {je:"ai",tu:"as","il/elle":"a",nous:"avons",vous:"avez","ils/elles":"ont"},
+      "Indicatif|Imparfait":         {je:"avais",tu:"avais","il/elle":"avait",nous:"avions",vous:"aviez","ils/elles":"avaient"},
+      "Indicatif|Passé composé":     {je:"ai eu",tu:"as eu","il/elle":"a eu",nous:"avons eu",vous:"avez eu","ils/elles":"ont eu"},
+      "Indicatif|Passé simple":      {je:"eus",tu:"eus","il/elle":"eut",nous:"eûmes",vous:"eûtes","ils/elles":"eurent"},
+      "Indicatif|Plus-que-parfait":  {je:"avais eu",tu:"avais eu","il/elle":"avait eu",nous:"avions eu",vous:"aviez eu","ils/elles":"avaient eu"},
+      "Indicatif|Passé antérieur":   {je:"eus eu",tu:"eus eu","il/elle":"eut eu",nous:"eûmes eu",vous:"eûtes eu","ils/elles":"eurent eu"},
+      "Indicatif|Futur simple":      {je:"aurai",tu:"auras","il/elle":"aura",nous:"aurons",vous:"aurez","ils/elles":"auront"},
+      "Indicatif|Futur antérieur":   {je:"aurai eu",tu:"auras eu","il/elle":"aura eu",nous:"aurons eu",vous:"aurez eu","ils/elles":"auront eu"},
+      "Subjonctif|Présent":          {je:"aie",tu:"aies","il/elle":"ait",nous:"ayons",vous:"ayez","ils/elles":"aient"},
+      "Subjonctif|Passé":            {je:"aie eu",tu:"aies eu","il/elle":"ait eu",nous:"ayons eu",vous:"ayez eu","ils/elles":"aient eu"},
+      "Subjonctif|Imparfait":        {je:"eusse",tu:"eusses","il/elle":"eût",nous:"eussions",vous:"eussiez","ils/elles":"eussent"},
+      "Subjonctif|Plus-que-parfait": {je:"eusse eu",tu:"eusses eu","il/elle":"eût eu",nous:"eussions eu",vous:"eussiez eu","ils/elles":"eussent eu"},
+      "Conditionnel|Présent":        {je:"aurais",tu:"aurais","il/elle":"aurait",nous:"aurions",vous:"auriez","ils/elles":"auraient"},
+      "Conditionnel|Passé":          {je:"aurais eu",tu:"aurais eu","il/elle":"aurait eu",nous:"aurions eu",vous:"auriez eu","ils/elles":"auraient eu"},
+      "Impératif|Présent":           {tu:"aie !",nous:"ayons !",vous:"ayez !"},
+      "Impératif|Passé":             {tu:"aie eu !",nous:"ayons eu !",vous:"ayez eu !"},
+      "Infinitif|Présent":           {"—":"avoir"},
+      "Infinitif|Passé":             {"—":"avoir eu"},
+      "Participe|Présent":           {"—":"ayant"},
+      "Participe|Passé simple":      {"—":"eu"},
+      "Participe|Passé composé":     {"—":"ayant eu"},
+    };
+    const key = `${mode}|${temps}`;
+    if(s[key] && s[key][p]) return s[key][p];
+  }
+
+  // ── ALLER ──
+  if(verbe==="aller") {
+    const s = {
+      "Indicatif|Présent":           {je:"vais",tu:"vas","il/elle":"va",nous:"allons",vous:"allez","ils/elles":"vont"},
+      "Indicatif|Imparfait":         {je:"allais",tu:"allais","il/elle":"allait",nous:"allions",vous:"alliez","ils/elles":"allaient"},
+      "Indicatif|Passé composé":     {je:"suis allé(e)",tu:"es allé(e)","il/elle":"est allé(e)",nous:"sommes allé(e)s",vous:"êtes allé(e)s","ils/elles":"sont allé(e)s"},
+      "Indicatif|Passé simple":      {je:"allai",tu:"allas","il/elle":"alla",nous:"allâmes",vous:"allâtes","ils/elles":"allèrent"},
+      "Indicatif|Plus-que-parfait":  {je:"étais allé(e)",tu:"étais allé(e)","il/elle":"était allé(e)",nous:"étions allé(e)s",vous:"étiez allé(e)s","ils/elles":"étaient allé(e)s"},
+      "Indicatif|Futur simple":      {je:"irai",tu:"iras","il/elle":"ira",nous:"irons",vous:"irez","ils/elles":"iront"},
+      "Conditionnel|Présent":        {je:"irais",tu:"irais","il/elle":"irait",nous:"irions",vous:"iriez","ils/elles":"iraient"},
+      "Subjonctif|Présent":          {je:"aille",tu:"ailles","il/elle":"aille",nous:"allions",vous:"alliez","ils/elles":"aillent"},
+      "Impératif|Présent":           {tu:"va !",nous:"allons !",vous:"allez !"},
+      "Infinitif|Présent":           {"—":"aller"},
+      "Infinitif|Passé":             {"—":"être allé(e)"},
+      "Participe|Présent":           {"—":"allant"},
+      "Participe|Passé simple":      {"—":"allé(e)"},
+      "Participe|Passé composé":     {"—":"étant allé(e)"},
+    };
+    const key = `${mode}|${temps}`;
+    if(s[key] && s[key][p]) return s[key][p];
+  }
+
+  // ── FAIRE ──
+  if(verbe==="faire") {
+    const s = {
+      "Indicatif|Présent":           {je:"fais",tu:"fais","il/elle":"fait",nous:"faisons",vous:"faites","ils/elles":"font"},
+      "Indicatif|Imparfait":         {je:"faisais",tu:"faisais","il/elle":"faisait",nous:"faisions",vous:"faisiez","ils/elles":"faisaient"},
+      "Indicatif|Passé composé":     {je:"ai fait",tu:"as fait","il/elle":"a fait",nous:"avons fait",vous:"avez fait","ils/elles":"ont fait"},
+      "Indicatif|Passé simple":      {je:"fis",tu:"fis","il/elle":"fit",nous:"fîmes",vous:"fîtes","ils/elles":"firent"},
+      "Indicatif|Futur simple":      {je:"ferai",tu:"feras","il/elle":"fera",nous:"ferons",vous:"ferez","ils/elles":"feront"},
+      "Conditionnel|Présent":        {je:"ferais",tu:"ferais","il/elle":"ferait",nous:"ferions",vous:"feriez","ils/elles":"feraient"},
+      "Subjonctif|Présent":          {je:"fasse",tu:"fasses","il/elle":"fasse",nous:"fassions",vous:"fassiez","ils/elles":"fassent"},
+      "Impératif|Présent":           {tu:"fais !",nous:"faisons !",vous:"faites !"},
+      "Infinitif|Présent":           {"—":"faire"},
+      "Infinitif|Passé":             {"—":"avoir fait"},
+      "Participe|Présent":           {"—":"faisant"},
+      "Participe|Passé simple":      {"—":"fait"},
+      "Participe|Passé composé":     {"—":"ayant fait"},
+    };
+    const key = `${mode}|${temps}`;
+    if(s[key] && s[key][p]) return s[key][p];
+  }
+
+  // ── Generic -ER verbs (aimer, espérer, célébrer, chanter, danser, partager, avancer, rêver) ──
+  const erVerbs = {
+    aimer:{rad:"aim",inf:"aimer",pp:"aimé"},
+    espérer:{rad:"espèr",radNous:"espér",inf:"espérer",pp:"espéré"},
+    célébrer:{rad:"célèbr",radNous:"célébr",inf:"célébrer",pp:"célébré"},
+    chanter:{rad:"chant",inf:"chanter",pp:"chanté"},
+    danser:{rad:"dans",inf:"danser",pp:"dansé"},
+    partager:{rad:"partag",inf:"partager",pp:"partagé"},
+    avancer:{rad:"avanc",inf:"avancer",pp:"avancé"},
+    rêver:{rad:"rêv",inf:"rêver",pp:"rêvé"},
+  };
+  if(erVerbs[verbe]) {
+    const v = erVerbs[verbe];
+    const r = v.rad; const rn = v.radNous || r;
+    const pp = v.pp;
+    const prMap = {je:"je",tu:"tu","il/elle":"il/elle",nous:"nous",vous:"vous","ils/elles":"ils/elles"};
+    const key = `${mode}|${temps}`;
+    const tables = {
+      "Indicatif|Présent":           {je:`${r}e`,tu:`${r}es`,"il/elle":`${r}e`,nous:`${rn}ons`,vous:`${rn}ez`,"ils/elles":`${r}ent`},
+      "Indicatif|Imparfait":         {je:`${rn}ais`,tu:`${rn}ais`,"il/elle":`${rn}ait`,nous:`${rn}ions`,vous:`${rn}iez`,"ils/elles":`${rn}aient`},
+      "Indicatif|Passé composé":     {je:`ai ${pp}`,tu:`as ${pp}`,"il/elle":`a ${pp}`,nous:`avons ${pp}`,vous:`avez ${pp}`,"ils/elles":`ont ${pp}`},
+      "Indicatif|Passé simple":      {je:`${rn}ai`,tu:`${rn}as`,"il/elle":`${rn}a`,nous:`${rn}âmes`,vous:`${rn}âtes`,"ils/elles":`${rn}èrent`},
+      "Indicatif|Plus-que-parfait":  {je:`avais ${pp}`,tu:`avais ${pp}`,"il/elle":`avait ${pp}`,nous:`avions ${pp}`,vous:`aviez ${pp}`,"ils/elles":`avaient ${pp}`},
+      "Indicatif|Passé antérieur":   {je:`eus ${pp}`,tu:`eus ${pp}`,"il/elle":`eut ${pp}`,nous:`eûmes ${pp}`,vous:`eûtes ${pp}`,"ils/elles":`eurent ${pp}`},
+      "Indicatif|Futur simple":      {je:`${rn}erai`,tu:`${rn}eras`,"il/elle":`${rn}era`,nous:`${rn}erons`,vous:`${rn}erez`,"ils/elles":`${rn}eront`},
+      "Indicatif|Futur antérieur":   {je:`aurai ${pp}`,tu:`auras ${pp}`,"il/elle":`aura ${pp}`,nous:`aurons ${pp}`,vous:`aurez ${pp}`,"ils/elles":`auront ${pp}`},
+      "Subjonctif|Présent":          {je:`${r}e`,tu:`${r}es`,"il/elle":`${r}e`,nous:`${rn}ions`,vous:`${rn}iez`,"ils/elles":`${r}ent`},
+      "Subjonctif|Passé":            {je:`aie ${pp}`,tu:`aies ${pp}`,"il/elle":`ait ${pp}`,nous:`ayons ${pp}`,vous:`ayez ${pp}`,"ils/elles":`aient ${pp}`},
+      "Subjonctif|Imparfait":        {je:`${rn}asse`,tu:`${rn}asses`,"il/elle":`${rn}ât`,nous:`${rn}assions`,vous:`${rn}assiez`,"ils/elles":`${rn}assent`},
+      "Subjonctif|Plus-que-parfait": {je:`eusse ${pp}`,tu:`eusses ${pp}`,"il/elle":`eût ${pp}`,nous:`eussions ${pp}`,vous:`eussiez ${pp}`,"ils/elles":`eussent ${pp}`},
+      "Conditionnel|Présent":        {je:`${rn}erais`,tu:`${rn}erais`,"il/elle":`${rn}erait`,nous:`${rn}erions`,vous:`${rn}eriez`,"ils/elles":`${rn}eraient`},
+      "Conditionnel|Passé":          {je:`aurais ${pp}`,tu:`aurais ${pp}`,"il/elle":`aurait ${pp}`,nous:`aurions ${pp}`,vous:`auriez ${pp}`,"ils/elles":`auraient ${pp}`},
+      "Impératif|Présent":           {tu:`${r}e !`,nous:`${rn}ons !`,vous:`${rn}ez !`},
+      "Impératif|Passé":             {tu:`aie ${pp} !`,nous:`ayons ${pp} !`,vous:`ayez ${pp} !`},
+      "Infinitif|Présent":           {"—":v.inf},
+      "Infinitif|Passé":             {"—":`avoir ${pp}`},
+      "Participe|Présent":           {"—":`${rn}ant`},
+      "Participe|Passé simple":      {"—":pp},
+      "Participe|Passé composé":     {"—":`ayant ${pp}`},
+    };
+    if(tables[key] && tables[key][p]) return tables[key][p];
+  }
+
+  // ── Generic -IR verbs (réussir, grandir) ──
+  const irVerbs = { réussir:{rad:"réussi",pp:"réussi"}, grandir:{rad:"grandi",pp:"grandi"} };
+  if(irVerbs[verbe]) {
+    const v = irVerbs[verbe]; const r = v.rad.slice(0,-1); const pp = v.pp;
+    const key = `${mode}|${temps}`;
+    const tables = {
+      "Indicatif|Présent":           {je:`${r}is`,tu:`${r}is`,"il/elle":`${r}it`,nous:`${r}issons`,vous:`${r}issez`,"ils/elles":`${r}issent`},
+      "Indicatif|Imparfait":         {je:`${r}issais`,tu:`${r}issais`,"il/elle":`${r}issait`,nous:`${r}issions`,vous:`${r}issiez`,"ils/elles":`${r}issaient`},
+      "Indicatif|Passé composé":     {je:`ai ${pp}`,tu:`as ${pp}`,"il/elle":`a ${pp}`,nous:`avons ${pp}`,vous:`avez ${pp}`,"ils/elles":`ont ${pp}`},
+      "Indicatif|Passé simple":      {je:`${r}is`,tu:`${r}is`,"il/elle":`${r}it`,nous:`${r}îmes`,vous:`${r}îtes`,"ils/elles":`${r}irent`},
+      "Indicatif|Futur simple":      {je:`${r}irai`,tu:`${r}iras`,"il/elle":`${r}ira`,nous:`${r}irons`,vous:`${r}irez`,"ils/elles":`${r}iront`},
+      "Conditionnel|Présent":        {je:`${r}irais`,tu:`${r}irais`,"il/elle":`${r}irait`,nous:`${r}irions`,vous:`${r}iriez`,"ils/elles":`${r}iraient`},
+      "Subjonctif|Présent":          {je:`${r}isse`,tu:`${r}isses`,"il/elle":`${r}isse`,nous:`${r}issions`,vous:`${r}issiez`,"ils/elles":`${r}issent`},
+      "Impératif|Présent":           {tu:`${r}is !`,nous:`${r}issons !`,vous:`${r}issez !`},
+      "Infinitif|Présent":           {"—":verbe},
+      "Infinitif|Passé":             {"—":`avoir ${pp}`},
+      "Participe|Présent":           {"—":`${r}issant`},
+      "Participe|Passé simple":      {"—":pp},
+      "Participe|Passé composé":     {"—":`ayant ${pp}`},
+    };
+    if(tables[key] && tables[key][p]) return tables[key][p];
+  }
+
+  // Briller
+  if(verbe==="briller") {
+    const r="brill"; const pp="brillé";
+    const key=`${mode}|${temps}`;
+    const tables={
+      "Indicatif|Présent":{je:`${r}e`,tu:`${r}es`,"il/elle":`${r}e`,nous:`${r}ons`,vous:`${r}ez`,"ils/elles":`${r}ent`},
+      "Indicatif|Imparfait":{je:`${r}ais`,tu:`${r}ais`,"il/elle":`${r}ait`,nous:`${r}ions`,vous:`${r}iez`,"ils/elles":`${r}aient`},
+      "Indicatif|Passé composé":{je:`ai ${pp}`,tu:`as ${pp}`,"il/elle":`a ${pp}`,nous:`avons ${pp}`,vous:`avez ${pp}`,"ils/elles":`ont ${pp}`},
+      "Indicatif|Passé simple":{je:`${r}ai`,tu:`${r}as`,"il/elle":`${r}a`,nous:`${r}âmes`,vous:`${r}âtes`,"ils/elles":`${r}èrent`},
+      "Indicatif|Futur simple":{je:`${r}erai`,tu:`${r}eras`,"il/elle":`${r}era`,nous:`${r}erons`,vous:`${r}erez`,"ils/elles":`${r}eront`},
+      "Conditionnel|Présent":{je:`${r}erais`,tu:`${r}erais`,"il/elle":`${r}erait`,nous:`${r}erions`,vous:`${r}eriez`,"ils/elles":`${r}eraient`},
+      "Subjonctif|Présent":{je:`${r}e`,tu:`${r}es`,"il/elle":`${r}e`,nous:`${r}ions`,vous:`${r}iez`,"ils/elles":`${r}ent`},
+      "Impératif|Présent":{tu:`${r}e !`,nous:`${r}ons !`,vous:`${r}ez !`},
+      "Infinitif|Présent":{"—":verbe},"Infinitif|Passé":{"—":`avoir ${pp}`},
+      "Participe|Présent":{"—":`${r}ant`},"Participe|Passé simple":{"—":pp},"Participe|Passé composé":{"—":`ayant ${pp}`},
+    };
+    if(tables[key]&&tables[key][p]) return tables[key][p];
+  }
+
+  return "—";
+}
+
+// ── WHEEL STATE ───────────────────────────────────────────────────────
+const state = {
+  mode:  { items: MODES, current: 0, angle: 0, spinning: false },
+  temps: { items: TEMPS_BY_MODE["Indicatif"], current: 0, angle: 0, spinning: false },
+  pr:    { items: PRONOMS_BY_MODE["Indicatif"], current: 0, angle: 0, spinning: false },
+  verbe: { items: VERBES, current: 0, angle: 0, spinning: false },
+};
+
+const COLORS = {
+  mode:  ["#7c3aed","#2563eb","#0891b2","#059669","#d97706","#dc2626"],
+  temps: ["#6d28d9","#1d4ed8","#0369a1","#047857","#b45309","#b91c1c","#7e22ce","#1e40af"],
+  pr:    ["#0f766e","#0369a1","#4338ca","#7c3aed","#be185d","#b45309"],
+  verbe: ["#dc2626","#c2410c","#b45309","#15803d","#0369a1","#1d4ed8",
+          "#7c3aed","#a21caf","#be185d","#0f766e","#1e3a8a","#3b0764",
+          "#14532d","#431407","#1c1917","#0c0a09","#1a1a1a","#2d1b69","#1e3a5f","#0a2e1a"],
+};
+
+function getWheelColors(id) { return COLORS[id] || COLORS.mode; }
+
+// ── DRAW WHEEL ────────────────────────────────────────────────────────
+function drawWheel(id) {
+  const canvas = document.getElementById(`wheel-${id}`);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = W/2 - 4;
+  const s = state[id];
+  const items = s.items;
+  const n = items.length;
+  const arc = (2*Math.PI)/n;
+  const colors = getWheelColors(id);
+
+  ctx.clearRect(0,0,W,H);
+
+  // Outer ring
+  ctx.beginPath(); ctx.arc(cx,cy,R+2,0,2*Math.PI);
+  ctx.strokeStyle = '#1a1825'; ctx.lineWidth=3; ctx.stroke();
+
+  for(let i=0;i<n;i++){
+    const startAngle = s.angle + i*arc - Math.PI/2;
+    const endAngle = startAngle + arc;
+    const color = colors[i % colors.length];
+
+    // Slice
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R,startAngle,endAngle);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Text
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(startAngle + arc/2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffffff';
+    const fontSize = Math.min(13, Math.max(9, R * 0.24));
+    ctx.font = `700 ${fontSize}px 'Crimson Pro', serif`;
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=5;
+    const maxLen = Math.max(8, Math.floor(R * 0.55));
+    let label = items[i];
+    if(label.length > maxLen) label = label.substring(0, maxLen-1)+'…';
+    ctx.fillText(label, R-8, 4);
+    ctx.restore();
+  }
+
+  // Center circle
+  const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,22);
+  grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#f0ece3');
+  ctx.beginPath(); ctx.arc(cx,cy,22,0,2*Math.PI);
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.strokeStyle='#1a1825'; ctx.lineWidth=2.5; ctx.stroke();
+
+  // Center symbol
+  ctx.fillStyle='#1a1825';
+  ctx.font=`bold 14px serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowBlur=0;
+  ctx.fillText('✦',cx,cy);
+}
+
+function getSelected(id) {
+  const s = state[id];
+  const n = s.items.length;
+  const arc = (2*Math.PI)/n;
+  // pointer is at top (angle = -PI/2 from start)
+  // find which slice is at top: angle 0 (after subtracting s.angle + rotation)
+  let a = ((-s.angle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+  const idx = Math.floor(a / arc) % n;
+  return { item: s.items[idx], index: idx };
+}
+
+// ── SPIN ──────────────────────────────────────────────────────────────
+let spinCount = 0;
+
+function spinWheel(id, onDone) {
+  const s = state[id];
+  if(s.spinning) return;
+  s.spinning = true;
+
+  const wc = document.getElementById(`wc-${id}`);
+  wc.classList.add('spinning');
+  document.getElementById('spin-all').disabled = true;
+
+  const n = s.items.length;
+  const targetIdx = Math.floor(Math.random() * n);
+  const arc = (2*Math.PI)/n;
+  const extra = 4 + Math.random() * 4; // 4-8 full rotations
+  const targetAngle = s.angle + extra * 2 * Math.PI + (targetIdx * arc);
+  const duration = 2000 + Math.random() * 800;
+  const start = performance.now();
+  const startAngle = s.angle;
+
+  function easeOut(t) { return 1 - Math.pow(1-t, 4); }
+
+  function frame(now) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed / duration, 1);
+    s.angle = startAngle + (targetAngle - startAngle) * easeOut(t);
+    drawWheel(id);
+    if(t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      s.angle = targetAngle;
+      s.spinning = false;
+      wc.classList.remove('spinning');
+      // Update temps/pr if mode changed
+      if(id==='mode') {
+        const selMode = getSelected('mode').item;
+        state.temps.items = TEMPS_BY_MODE[selMode];
+        state.pr.items = PRONOMS_BY_MODE[selMode];
+        state.temps.angle = 0; state.pr.angle = 0;
+        drawWheel('temps'); drawWheel('pr');
+      }
+      checkAllStopped();
+      if(onDone) onDone();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+let pendingSpins = 0;
+function spinAll() {
+  if(Object.values(state).some(s=>s.spinning)) return;
+  pendingSpins = 4;
+  ['mode','temps','pr','verbe'].forEach(id => {
+    spinWheel(id, () => { pendingSpins--; checkAllStopped(); });
+  });
+}
+
+function checkAllStopped() {
+  if(Object.values(state).every(s=>!s.spinning)) {
+    document.getElementById('spin-all').disabled = false;
+    showResult();
+  }
+}
+
+function showResult() {
+  const mode  = getSelected('mode').item;
+  const temps = getSelected('temps').item;
+  const pr    = getSelected('pr').item;
+  const verbe = getSelected('verbe').item;
+
+  // Adjust temps and pr to valid values for selected mode
+  const validTemps = TEMPS_BY_MODE[mode];
+  const validPr    = PRONOMS_BY_MODE[mode];
+  const actualTemps = validTemps.includes(temps) ? temps : validTemps[0];
+  const actualPr    = validPr.includes(pr) ? pr : validPr[0];
+
+  const forme = conjugue(mode, actualTemps, verbe, actualPr);
+
+  // Tags
+  document.getElementById('combo-tags').innerHTML = `
+    <span class="combo-tag tag-mode">${mode}</span>
+    <span class="combo-tag tag-temps">${actualTemps}</span>
+    <span class="combo-tag tag-pr">${actualPr}</span>
+    <span class="combo-tag tag-verbe">${verbe}</span>
+  `;
+
+  const prDisplay = actualPr === '—' ? '' : `<strong>${actualPr}</strong> + `;
+  document.getElementById('result-question').innerHTML =
+    `Conjuguez ${prDisplay}<strong>${verbe}</strong> → ${mode} ${actualTemps}`;
+
+  const ansEl = document.getElementById('result-answer');
+  ansEl.textContent = forme;
+  ansEl.classList.add('hidden');
+
+  document.getElementById('reveal-hint').style.opacity='1';
+  document.getElementById('eval-btns').classList.remove('visible');
+
+  const card = document.getElementById('result-card');
+  card.classList.add('visible');
+}
+
+function revealAnswer() {
+  const ansEl = document.getElementById('result-answer');
+  if(!ansEl.classList.contains('hidden')) return;
+  ansEl.classList.remove('hidden');
+  document.getElementById('reveal-hint').style.opacity='0';
+  document.getElementById('eval-btns').classList.add('visible');
+}
+
+let scOk=0, scErr=0, scTot=0;
+function score(ok) {
+  scTot++;
+  if(ok) scOk++; else scErr++;
+  document.getElementById('sc-ok').textContent=scOk;
+  document.getElementById('sc-err').textContent=scErr;
+  document.getElementById('sc-tot').textContent=scTot;
+  document.getElementById('eval-btns').classList.remove('visible');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+drawWheel('mode');
+drawWheel('temps');
+drawWheel('pr');
+drawWheel('verbe');
+</script>
+</body>
+</html>
